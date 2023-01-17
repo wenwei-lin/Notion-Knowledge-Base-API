@@ -2,6 +2,10 @@ import requests
 import json
 
 
+class NotionAPIException(Exception):
+    pass
+
+
 class NotionManager:
     def __init__(self, token):
         self.header = {
@@ -16,7 +20,12 @@ class NotionManager:
         response = requests.post(
             endpoint, json.dumps(payload), headers=self.header
         ).json()
-        # TODO: Handle response 400
+        
+        if response["object"] == "error":
+            raise NotionAPIException(
+                f"Response {response['status']}: {response['code']}. {response['message']}"
+            )
+
         return response
 
     def update(self, page_id, payload):
@@ -24,15 +33,23 @@ class NotionManager:
         response = requests.patch(
             endpoint, json.dumps(payload), headers=self.header
         ).json()
+
         return response
 
     def delete(self, page_id):
         endpoint = f"https://api.notion.com/v1/pages/{page_id}"
         payload = {"archived": True}
-        response = requests.patch(endpoint, json.dumps(payload), headers=self.header)
+        response = requests.patch(endpoint, json.dumps(payload), headers=self.header).json()
+
         return response
 
     def query(self, database_id, payload):
         endpoint = f"https://api.notion.com/v1/databases/{database_id}/query"
-        response = requests.post(endpoint, json.dumps(payload), headers=self.header)
-        return response
+        response = requests.post(endpoint, json.dumps(payload), headers=self.header).json()
+
+        if response["object"] == "error":
+            raise NotionAPIException(
+                f"Response {response['status']}: {response['code']}. {response['message']}"
+            )
+
+        return response['results']
