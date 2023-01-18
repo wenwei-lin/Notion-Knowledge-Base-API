@@ -1,31 +1,43 @@
 import azure.functions as func
 import logging
+import os
 
+from logic.commands import AddByURLCommand
+from persistence.notion import NotionManager
+from persistence.database import PersonDatabase, SourceDatabase, PodcastDatabase
 
 app = func.FunctionApp()
 
-# Learn more at aka.ms/pythonprogrammingmodel
+def get_add_by_url_command():
+    notion = NotionManager(os.getenv('NOTION_TOKEN'))
+    person_database = PersonDatabase(notion, os.getenv("PERSON_DATABASE_ID"))
+    source_database = SourceDatabase(notion, os.getenv("SOURCE_DATABASE_ID"))
+    podcast_database = PodcastDatabase(notion, os.getenv("PODCAST_DATABASE_ID"))
+    add_by_url_command = AddByURLCommand(source_database, person_database, podcast_database)
 
-# Get started by running the following code to create a function using a HTTP trigger.
+    return add_by_url_command
 
-# @app.function_name(name="HttpTrigger1")
-# @app.route(route="hello")
-# def test_function(req: func.HttpRequest) -> func.HttpResponse:
-#      logging.info('Python HTTP trigger function processed a request.')
-# 
-#      name = req.params.get('name')
-#      if not name:
-#         try:
-#             req_body = req.get_json()
-#         except ValueError:
-#             pass
-#         else:
-#             name = req_body.get('name')
-#
-#      if name:
-#         return func.HttpResponse(f"Hello, {name}. This HTTP triggered function executed successfully.")
-#      else:
-#         return func.HttpResponse(
-#              "This HTTP triggered function executed successfully. Pass a name in the query string or in the request body for a personalized response.",
-#              status_code=200
-#         )
+@app.function_name(name="AddByURL")
+@app.route(route="add/source")
+def add_source(req: func.HttpRequest) -> func.HttpResponse:
+    logging.info("AddSourceToNotion function processed a request.")
+
+    add_by_url_command = get_add_by_url_command()
+    url = req.params.get('url')
+    if url:
+        page = add_by_url_command.execute(url)
+
+        if page:
+            return func.HttpResponse(
+                "Add successfully",
+                status_code=200
+            )
+    
+    return func.HttpResponse(
+        "Error",
+        status_code=400
+    )
+
+
+
+

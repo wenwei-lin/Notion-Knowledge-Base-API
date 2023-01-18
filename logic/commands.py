@@ -1,6 +1,6 @@
 from abc import ABC, abstractmethod
 from persistence.database import SourceDatabase, PersonDatabase, PodcastDatabase
-
+from extractor.extractor import ZhongduExtractor
 
 class Command(ABC):
     @abstractmethod
@@ -97,3 +97,39 @@ class CreatePodcastCommand(Command):
             podcast = self.podcast_database.create_page(data)
 
         return podcast
+
+class AddByURLCommand(Command):
+    def __init__(self, source_database, person_database, podcast_database):
+        self.source_database = source_database
+        self.person_database = person_database
+        self.podcast_database = podcast_database
+
+    def _get_extractors(self):
+        extractors = [
+            ZhongduExtractor(),
+        ]
+
+        return extractors
+    
+    def _get_create_commands(self):
+        get_source_id_command = GetSourceIDCommand(self.source_database)
+        get_person_id_command = GetPersonIDCommand(self.person_database)
+
+        create_commands = {
+            "Podcast": CreatePodcastCommand(get_source_id_command, get_person_id_command, self.podcast_database)
+        }
+
+        return create_commands
+    
+    def execute(self, url):
+        extractors = self._get_extractors()
+        create_commands = self._get_create_commands()
+
+        for extractor in extractors:
+            if extractor.match(url):
+                data = extractor.extract(url)
+                create_command = create_commands.get(data['type'])
+                page = create_command.execute(data)
+                return page
+        
+        return None
