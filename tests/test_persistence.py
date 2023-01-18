@@ -69,6 +69,7 @@ class PodcastDatabaseTester(unittest.TestCase):
         }
         page_id = self.podcast_database.create_page(data)
         self.assertIsNotNone(page_id)
+        self.assertTrue(self.podcast_database.delete_page(page_id))
 
 
 if __name__ == "__main__":

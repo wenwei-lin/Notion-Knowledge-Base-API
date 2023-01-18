@@ -42,18 +42,16 @@ class PersistenceLayer(ABC):
             payload["cover"] = {"external": {"url": data["cover"]}}
 
         response = self.notion.create(payload)
-        page_id = response["id"]
 
-        return page_id
+        return response
 
     def update_page_property(self, page_id, data: dict):
         properties = self._format_properties(data)
         payload = {"properties": properties}
 
         response = self.notion.update(page_id, payload)
-        page_id = response["id"]
 
-        return page_id
+        return response
 
     def delete_page(self, page_id):
         response = self.notion.delete(page_id)
