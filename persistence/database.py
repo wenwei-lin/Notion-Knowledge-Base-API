@@ -90,3 +90,19 @@ class SourceDatabase(PersistenceLayer):
             "published": {"Published": {"date": {"start": value}}},
         }
         return formats.get(name)
+
+
+class PodcastDatabase(PersistenceLayer):
+    def _format_one_property(self, name, value):
+        if isinstance(value, list):
+            value = [{"id": id} for id in value]
+
+        formats = {
+            "title": {"Title": {"title": [{"text": {"content": value}}]}},
+            "author": {"Author": {"relation": value}},
+            "duration": {"Duration": {"number": value}},
+            "series": {"Series": {"select": {"name": value}}},
+            "source_id": {"Source": {"relation": [{"id": value}]}},
+        }
+
+        return formats.get(name)

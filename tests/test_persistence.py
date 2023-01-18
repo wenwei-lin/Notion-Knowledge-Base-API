@@ -3,7 +3,7 @@ import dotenv
 import os
 from datetime import datetime
 
-from persistence.database import PersonDatabase, SourceDatabase
+from persistence.database import PersonDatabase, SourceDatabase, PodcastDatabase
 from persistence.notion import NotionManager
 
 dotenv.load_dotenv()
@@ -53,6 +53,22 @@ class SourceDatabaseTester(unittest.TestCase):
         page_id = self.source_database.create_page(data)
         self.assertIsNotNone(page_id)
         self.assertTrue(self.source_database.delete_page(page_id))
+
+class PodcastDatabaseTester(unittest.TestCase):
+    def setUp(self) -> None:
+        notion = NotionManager(os.getenv("NOTION_TOKEN"))
+        self.podcast_database = PodcastDatabase(notion, os.getenv('PODCAST_DATABASE_ID'))
+    
+    def testAddPodcast(self):
+        data = {
+            "title": """你的“报复性熬夜”，也许能创造更多价值""",
+            "author": ["4990836d1d3446dbbf3872421bac85d7"],
+            "duration": 47,
+            "series": "梁永安的播客",
+            "source_id": "00fa6eeeb1404ffba814c4776be86f82"
+        }
+        page_id = self.podcast_database.create_page(data)
+        self.assertIsNotNone(page_id)
 
 
 if __name__ == "__main__":
