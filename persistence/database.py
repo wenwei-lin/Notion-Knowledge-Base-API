@@ -1,11 +1,9 @@
-import os
 from abc import ABC, abstractmethod
-import json
 
 from persistence.notion import NotionManager
 
 
-class PersistenceLayer:
+class PersistenceLayer(ABC):
     def __init__(self, notion: NotionManager, database_id):
         self.notion = notion
         self.database_id = database_id
@@ -76,3 +74,19 @@ class PersonDatabase(PersistenceLayer):
             "country_id": {"Country": {"relation": [{"id": value}]}},
         }
         return formats.get(name, None)
+
+
+class SourceDatabase(PersistenceLayer):
+    def _format_one_property(self, name, value):
+        formats = {
+            "title": {"Title": {"title": [{"text": {"content": value}}]}},
+            "type": {"Type": {"select": {"name": value}}},
+            "description": {
+                "Description": {
+                    "rich_text": [{"type": "text", "text": {"content": value}}]
+                }
+            },
+            "language": {"Language": {"select": {"name": value}}},
+            "published": {"Published": {"date": {"start": value}}},
+        }
+        return formats.get(name)
