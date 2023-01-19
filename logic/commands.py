@@ -83,9 +83,20 @@ class GetPersonIDCommand(Command):
         if page is None:
             page = self._create_page(data)
         log.info(f"Get person id: {page['id']}")
-        
+
         return page["id"]
 
+class GetPeopleIDListCommand(Command):
+    def __init__(self, get_person_id_command: GetPersonIDCommand):
+        self.get_person_id_command = get_person_id_command
+        log.info('Create a GetPeopleIDListCommand object.')
+    
+    def execute(self, author_list):
+        log.info(f"Get author id list for: {author_list}")
+        author_id_list = [self.get_person_id_command.execute(author) for author in author_list]
+        log.info(f"Get author id list: {author_id_list}")
+
+        return author_id_list
 
 class CreatePodcastCommand(Command):
     def __init__(
@@ -95,33 +106,37 @@ class CreatePodcastCommand(Command):
         podcast_database: PodcastDatabase,
     ):
         self.get_source_id_command = get_source_id_command
-        self.get_person_id_command = get_person_id_command
+        self.get_people_id_list_command = GetPeopleIDListCommand(get_person_id_command)
         self.podcast_database = podcast_database
-
-    def _get_author_id(self, author_list: list):
-        return [self.get_person_id_command.execute(author) for author in author_list]
-
-    def _get_source_id(self, data):
-        return self.get_source_id_command.execute(data)
+        log.info("Create a CreatePodcastCommand object.")
 
     def _query_podcast(self, title):
-        filter = {"filter": {"property": "Title", "rich_text": {"equals": title}}}
+        log.info(f'Query podcast database for: title={title}')
 
+        filter = {"filter": {"property": "Title", "rich_text": {"equals": title}}}
         pages = self.podcast_database.query_pages(filter)
+
+        page = None
         if len(pages) > 0:
-            return pages[0]
+            page = pages[0]
+            log.info(f'Find podcast.')
         else:
-            return None
+            log.info('Podcast not found.')
+
+        return page
 
     def execute(self, data):
-        source_id = self._get_source_id(data)
-        author_id = self._get_author_id(data["author"])
+        log.info("Execute CreatePodcast command.")
+
+        source_id = self.get_source_id_command.execute(data)
+        author_id_list = self.get_people_id_list_command.execute(data["author"])
         data["source_id"] = source_id
-        data["author"] = author_id
+        data["author"] = author_id_list
 
         podcast = self._query_podcast(data["title"])
         if podcast is None:
             podcast = self.podcast_database.create_page(data)
+        log.info("Podcast created.")
 
         return podcast
 
