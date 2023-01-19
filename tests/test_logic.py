@@ -6,7 +6,7 @@ from datetime import datetime
 from persistence.database import PersonDatabase, SourceDatabase, PodcastDatabase
 from persistence.notion import NotionManager
 from logic.commands import GetSourceIDCommand, GetPersonIDCommand, CreatePodcastCommand
-from extractor.extractor import ZhongduExtractor
+from extractor.zhongdu import ZhongduExtractor
 
 dotenv.load_dotenv()
 

@@ -1,6 +1,6 @@
 from abc import ABC, abstractmethod
 from persistence.database import SourceDatabase, PersonDatabase, PodcastDatabase
-from extractor.extractor import ZhongduExtractor
+from extractor.zhongdu import ZhongduExtractor
 
 class Command(ABC):
     @abstractmethod

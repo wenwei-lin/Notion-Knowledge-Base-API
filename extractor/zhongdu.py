@@ -1,14 +1,6 @@
-from abc import ABC, abstractmethod
+from extractor.base import Extractor
 import re
 import requests
-
-class Extractor(ABC):
-    @abstractmethod
-    def match(self, url) -> bool:
-        raise NotImplementedError("Classes inherit Extractor should implement a match method.")
-    
-    def extract(self, url) -> dict:
-        raise NotImplementedError("Classes inherit Extractor should implement a extract method.")
 
 class ZhongduExtractor(Extractor):
     def match(self, url):
