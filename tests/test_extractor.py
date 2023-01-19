@@ -1,5 +1,5 @@
 import unittest
-from extractor.extractor import ZhongduExtractor
+from extractor.zhongdu import ZhongduExtractor
 
 class ZhongduExtractorTester(unittest.TestCase):
     def setUp(self) -> None:
