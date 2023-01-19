@@ -63,7 +63,7 @@ class PersistenceLayer(ABC):
     def create_page(self, data):
         log.info(f"Create a page in Notion for: {data}")
 
-        page_object = self._construct_page_object()
+        page_object = self._construct_page_object(data)
         response = self.notion.create(page_object)
         log.info("Page created.")
 

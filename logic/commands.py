@@ -136,7 +136,7 @@ class CreatePodcastCommand(Command):
         podcast = self._query_podcast(data["title"])
         if podcast is None:
             podcast = self.podcast_database.create_page(data)
-        log.info("Podcast created.")
+        log.info("Podcast page created.")
 
         return podcast
 
@@ -146,35 +146,43 @@ class AddByURLCommand(Command):
         self.source_database = source_database
         self.person_database = person_database
         self.podcast_database = podcast_database
+        log.info('Create a AddByURLCommand object.')
 
     def _get_extractors(self):
         extractors = [
             ZhongduExtractor(),
         ]
-
+        log.info(f"Get extractors: {extractors}")
         return extractors
 
     def _get_create_commands(self):
         get_source_id_command = GetSourceIDCommand(self.source_database)
         get_person_id_command = GetPersonIDCommand(self.person_database)
-
         create_commands = {
             "Podcast": CreatePodcastCommand(
                 get_source_id_command, get_person_id_command, self.podcast_database
             )
         }
+        log.info(f"Get create_commands: {create_commands}")
 
         return create_commands
 
     def execute(self, url):
+        log.info(f'Execute AddByURL command.')
+
         extractors = self._get_extractors()
         create_commands = self._get_create_commands()
 
+        page = None
+        
+        # Find a extractor that match the url
         for extractor in extractors:
             if extractor.match(url):
                 data = extractor.extract(url)
                 create_command = create_commands.get(data["type"])
                 page = create_command.execute(data)
-                return page
 
-        return None
+        if page is None:
+            log.info(f"Cannot find a extractor {url}.")
+
+        return page
