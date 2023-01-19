@@ -18,12 +18,21 @@ def get_add_by_url_command():
     return add_by_url_command
 
 @app.function_name(name="AddByURL")
-@app.route(route="add/source")
+@app.route(route="addURL", auth_level=func.AuthLevel.ANONYMOUS)
 def add_source(req: func.HttpRequest) -> func.HttpResponse:
     logging.info("AddSourceToNotion function processed a request.")
 
     add_by_url_command = get_add_by_url_command()
-    url = req.params.get('url')
+    url = req.params.get('url') 
+    if not url: 
+        try: 
+            req_body = req.get_json() 
+        except ValueError: 
+            pass 
+        else: 
+            url = req_body.get('url') 
+        
+
     if url:
         page = add_by_url_command.execute(url)
 

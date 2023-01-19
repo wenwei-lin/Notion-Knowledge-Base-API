@@ -12,7 +12,7 @@ class Extractor(ABC):
 
 class ZhongduExtractor(Extractor):
     def match(self, url):
-        pattern = re.compile(r'ny.zdline.cn/mobile/audioText')
+        pattern = re.compile(r'ny.zdline.cn/mobile/audio')
         return bool(pattern.search(url))
     
     def _get_artId(self, url):
