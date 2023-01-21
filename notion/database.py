@@ -1,7 +1,7 @@
 from abc import ABC, abstractmethod
 import logging
 
-from persistence.notion import NotionManager
+from notion.notion import NotionManager
 
 log = logging.getLogger(__name__)
 

@@ -3,8 +3,8 @@ import logging
 import os
 
 from logic.commands import AddByURLCommand
-from persistence.notion import NotionManager
-from persistence.database import PersonDatabase, SourceDatabase, PodcastDatabase
+from notion.notion import NotionManager
+from notion.database import PersonDatabase, SourceDatabase, PodcastDatabase
 
 log = logging.getLogger(__name__)
 app = func.FunctionApp()

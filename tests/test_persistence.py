@@ -3,8 +3,8 @@ import dotenv
 import os
 from datetime import datetime
 
-from persistence.database import PersonDatabase, SourceDatabase, PodcastDatabase
-from persistence.notion import NotionManager
+from notion.database import PersonDatabase, SourceDatabase, PodcastDatabase
+from notion.notion import NotionManager
 
 dotenv.load_dotenv()
 

@@ -1,7 +1,7 @@
 from abc import ABC, abstractmethod
 import logging
 
-from persistence.database import (
+from notion.database import (
     SourceDatabase,
     PersonDatabase,
     PodcastDatabase,
