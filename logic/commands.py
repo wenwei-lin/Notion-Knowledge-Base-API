@@ -1,7 +1,13 @@
 from abc import ABC, abstractmethod
 import logging
 
-from persistence.database import SourceDatabase, PersonDatabase, PodcastDatabase
+from persistence.database import (
+    SourceDatabase,
+    PersonDatabase,
+    PodcastDatabase,
+    BookDatabase,
+    PersistenceLayer,
+)
 from extractor.zhongdu import ZhongduExtractor
 
 log = logging.getLogger(__name__)
@@ -54,7 +60,7 @@ class GetSourceIDCommand(Command):
 class GetPersonIDCommand(Command):
     def __init__(self, person_database: PersonDatabase):
         self.person_database = person_database
-        log.info('Create a GetPersonIDCommand object.')
+        log.info("Create a GetPersonIDCommand object.")
 
     def _query_by_name(self, data):
         log.info(f"Query person database for: {data}")
@@ -69,7 +75,7 @@ class GetPersonIDCommand(Command):
             log.info("Find page in person database.")
         else:
             log.info("Cannot find person.")
-        
+
         return page
 
     def _create_page(self, data):
@@ -86,59 +92,66 @@ class GetPersonIDCommand(Command):
 
         return page["id"]
 
+
 class GetPeopleIDListCommand(Command):
     def __init__(self, get_person_id_command: GetPersonIDCommand):
         self.get_person_id_command = get_person_id_command
-        log.info('Create a GetPeopleIDListCommand object.')
-    
+        log.info("Create a GetPeopleIDListCommand object.")
+
     def execute(self, author_list):
         log.info(f"Get author id list for: {author_list}")
-        author_id_list = [self.get_person_id_command.execute(author) for author in author_list]
+        author_id_list = [
+            self.get_person_id_command.execute(author) for author in author_list
+        ]
         log.info(f"Get author id list: {author_id_list}")
 
         return author_id_list
 
-class CreatePodcastCommand(Command):
+
+class CreateSourceCommand(Command):
     def __init__(
         self,
         get_source_id_command: GetSourceIDCommand,
         get_person_id_command: GetPersonIDCommand,
-        podcast_database: PodcastDatabase,
+        database: PersistenceLayer,
     ):
         self.get_source_id_command = get_source_id_command
         self.get_people_id_list_command = GetPeopleIDListCommand(get_person_id_command)
-        self.podcast_database = podcast_database
-        log.info("Create a CreatePodcastCommand object.")
+        self.database = database
+        log.info("Create a CreateSourceCommand object.")
 
-    def _query_podcast(self, title):
-        log.info(f'Query podcast database for: title={title}')
+    def _query_by_title(self, title):
+        log.info(
+            f"Query {self.database.__class__.__name__} database for: title={title}"
+        )
 
         filter = {"filter": {"property": "Title", "rich_text": {"equals": title}}}
-        pages = self.podcast_database.query_pages(filter)
+        pages = self.database.query_pages(filter)
 
         page = None
         if len(pages) > 0:
             page = pages[0]
-            log.info(f'Find podcast.')
+            log.info(f"Find source.")
         else:
-            log.info('Podcast not found.')
+            log.info("Source didn't exist.")
 
         return page
 
+    # TODO: Separate parse data
     def execute(self, data):
-        log.info("Execute CreatePodcast command.")
+        log.info("Execute CreateSource command.")
 
         source_id = self.get_source_id_command.execute(data)
         author_id_list = self.get_people_id_list_command.execute(data["author"])
         data["source_id"] = source_id
         data["author"] = author_id_list
 
-        podcast = self._query_podcast(data["title"])
-        if podcast is None:
-            podcast = self.podcast_database.create_page(data)
-        log.info("Podcast page created.")
+        page = self._query_by_title(data["title"])
+        if page is None:
+            page = self.database.create_page(data)
+        log.info(f"{self.database.__class__.__name__} page created.")
 
-        return podcast
+        return page
 
 
 class AddByURLCommand(Command):
@@ -146,7 +159,7 @@ class AddByURLCommand(Command):
         self.source_database = source_database
         self.person_database = person_database
         self.podcast_database = podcast_database
-        log.info('Create a AddByURLCommand object.')
+        log.info("Create a AddByURLCommand object.")
 
     def _get_extractors(self):
         extractors = [
@@ -159,7 +172,7 @@ class AddByURLCommand(Command):
         get_source_id_command = GetSourceIDCommand(self.source_database)
         get_person_id_command = GetPersonIDCommand(self.person_database)
         create_commands = {
-            "Podcast": CreatePodcastCommand(
+            "Podcast": CreateSourceCommand(
                 get_source_id_command, get_person_id_command, self.podcast_database
             )
         }
@@ -168,13 +181,13 @@ class AddByURLCommand(Command):
         return create_commands
 
     def execute(self, url):
-        log.info(f'Execute AddByURL command.')
+        log.info(f"Execute AddByURL command.")
 
         extractors = self._get_extractors()
         create_commands = self._get_create_commands()
 
         page = None
-        
+
         # Find a extractor that match the url
         for extractor in extractors:
             if extractor.match(url):

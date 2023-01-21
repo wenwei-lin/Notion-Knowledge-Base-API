@@ -36,7 +36,7 @@ class PersistenceLayer(ABC):
             if property:
                 properties.update(property)
         log.info(f"Properties after formatting: {properties}")
-        
+
         return properties
 
     def _construct_page_object(self, data: dict):
@@ -88,10 +88,10 @@ class PersistenceLayer(ABC):
         return True
 
     def query_pages(self, filter):
-        log.info(f'Query database({self.database_id}) for: {filter}')
+        log.info(f"Query database({self.database_id}) for: {filter}")
 
         response = self.notion.query(self.database_id, payload=filter)
-        log.info('Query successfully.')
+        log.info("Query successfully.")
 
         return response
 
@@ -138,3 +138,27 @@ class PodcastDatabase(PersistenceLayer):
         }
 
         return formats.get(name)
+
+
+class BookDatabase(PersistenceLayer):
+    def _format_one_property(self, name, value):
+        if isinstance(value, list):
+            value = [{"id": id} for id in value]
+
+        formats = {
+            "title": {"Title": {"title": [{"text": {"content": value}}]}},
+            "original_title": {
+                "Original Title": {
+                    "rich_text": [{"type": "text", "text": {"content": value}}]
+                }
+            },
+            "author": {"Author": {"relation": value}},
+            "translator": {"Translator": {"relation": value}},
+            "pages": {"Pages": {"number": value}},
+            "publisher": {"Publisher": {"select": {"name": value}}},
+            "isbn": {
+                "ISBN": {"rich_text": [{"type": "text", "text": {"content": value}}]}
+            },
+            "douban": {"Douban": {"url": value}},
+            "source_id": {"Source": {"relation": [{"id": value}]}},
+        }
