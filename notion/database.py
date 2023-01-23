@@ -29,7 +29,9 @@ class PersistenceLayer(ABC):
         properties = []
 
         for property_name, property_value in data.items():
-            property_object = self._turn_to_notion_property(property_name, property_value)
+            property_object = self._turn_to_notion_property(
+                property_name, property_value
+            )
             if property_object:
                 properties.append(property_object)
 
@@ -91,6 +93,7 @@ class PersonDatabase(PersistenceLayer):
     def _turn_to_notion_property(self, property_name, property_value) -> NotionProperty:
         formats = {
             "name": Title("Name", property_value),
+            "description": RichText("Description", property_value),
             "original_name": RichText("Original Name", property_value),
             "country_id": Relation("Country", [property_value]),
         }
@@ -135,4 +138,3 @@ class BookDatabase(PersistenceLayer):
             "douban": URL("Douban", property_value),
             "source_id": Relation("Source", [property_value]),
         }
-
