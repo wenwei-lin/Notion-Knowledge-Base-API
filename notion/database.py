@@ -2,6 +2,8 @@ from abc import ABC, abstractmethod
 import logging
 
 from notion.notion import NotionManager
+from notion.property import *
+from notion.page import NotionPage
 
 log = logging.getLogger(__name__)
 
@@ -16,55 +18,38 @@ class PersistenceLayer(ABC):
         )
 
     @abstractmethod
-    def _format_one_property(self, name, value):
+    def _turn_to_notion_property(self, property_name, property_value) -> NotionProperty:
         raise NotImplementedError(
-            "PersistenceLayer class should implement the _format_one_property method."
+            "PersistenceLayer class should implement the _turn_to_notion_property method."
         )
 
-    def _format_properties(self, data: dict):
+    def _turn_to_notion_property_list(self, data: dict):
         log.info(f"Format data into Notion property values: {data}")
 
-        properties = dict()
+        properties = []
 
-        for property_name in data.keys():
-            # Invoke _format_one_property() method only if property value is not empty
-            property = (
-                self._format_one_property(property_name, data[property_name])
-                if data[property_name]
-                else None
-            )
-            if property:
-                properties.update(property)
+        for property_name, property_value in data.items():
+            property_object = self._turn_to_notion_property(property_name, property_value)
+            if property_object:
+                properties.append(property_object)
+
         log.info(f"Properties after formatting: {properties}")
 
         return properties
 
-    def _construct_page_object(self, data: dict):
-        log.info(f"Format a Notion page object for: {data}")
-
-        properties = self._format_properties(data)
-
-        page_object = {
-            "parent": {"database_id": self.database_id},
-            "properties": properties,
-        }
-
-        # Add optional attributes
-        if data.get("icon"):
-            page_object["icon"] = {"emoji": data["icon"]}
-        if data.get("icon_url"):
-            page_object["icon"] = {"external": {"url": data["icon_url"]}}
-        if data.get("cover"):
-            page_object["cover"] = {"external": {"url": data["cover"]}}
-        log.info(f"Construct a Notion page object: {page_object}")
-
-        return page_object
-
-    def create_page(self, data):
+    def create_page(self, data: dict):
         log.info(f"Create a page in Notion for: {data}")
 
-        page_object = self._construct_page_object(data)
-        response = self.notion.create(page_object)
+        properties = self._turn_to_notion_property_list(data)
+        page_object = NotionPage(
+            self.database_id,
+            properties,
+            cover_url=data.get("cover_url"),
+            icon_emoji=data.get("icon_emoji"),
+            icon_url=data.get("icon_url"),
+        )
+        response = self.notion.create(page_object.get_notion_page_object())
+
         log.info("Page created.")
 
         return response
@@ -72,9 +57,15 @@ class PersistenceLayer(ABC):
     def update_page_property(self, page_id, data: dict):
         log.info(f"Update page {page_id} into: {data}")
 
-        properties = self._format_properties(data)
-        payload = {"properties": properties}
-        response = self.notion.update(page_id, payload)
+        property_list = self._turn_to_notion_property_list()
+        properties = {}
+        for property_object in property_list:
+            assert isinstance(property_object, NotionProperty)
+            property_dict = property_object.get_dict()
+            if property_dict:
+                properties.update(property_dict)
+
+        response = self.notion.update(page_id, {"properties": properties})
         log.info("Page updated.")
 
         return response
@@ -97,68 +88,51 @@ class PersistenceLayer(ABC):
 
 
 class PersonDatabase(PersistenceLayer):
-    def _format_one_property(self, name, value):
+    def _turn_to_notion_property(self, property_name, property_value) -> NotionProperty:
         formats = {
-            "name": {"Name": {"title": [{"text": {"content": value}}]}},
-            "original_name": {
-                "Original Name": {"rich_text": [{"type": "text", "content": value}]}
-            },
-            "country_id": {"Country": {"relation": [{"id": value}]}},
+            "name": Title("Name", property_value),
+            "original_name": RichText("Original Name", property_value),
+            "country_id": Relation("Country", [property_value]),
         }
-        return formats.get(name, None)
+        return formats.get(property_name)
 
 
 class SourceDatabase(PersistenceLayer):
-    def _format_one_property(self, name, value):
+    def _turn_to_notion_property(self, property_name, property_value) -> NotionProperty:
         formats = {
-            "title": {"Title": {"title": [{"text": {"content": value}}]}},
-            "type": {"Type": {"select": {"name": value}}},
-            "description": {
-                "Description": {
-                    "rich_text": [{"type": "text", "text": {"content": value}}]
-                }
-            },
-            "language": {"Language": {"select": {"name": value}}},
-            "published": {"Published": {"date": {"start": value}}},
+            "title": Title("Title", property_value),
+            "type": Select("Type", property_value),
+            "description": RichText("Description", property_value),
+            "language": Select("Language", property_value),
+            "published": Date("Published", property_value),
         }
-        return formats.get(name)
+
+        return formats.get(property_name)
 
 
 class PodcastDatabase(PersistenceLayer):
-    def _format_one_property(self, name, value):
-        if isinstance(value, list):
-            value = [{"id": id} for id in value]
-
+    def _turn_to_notion_property(self, property_name, property_value) -> NotionProperty:
         formats = {
-            "title": {"Title": {"title": [{"text": {"content": value}}]}},
-            "author": {"Author": {"relation": value}},
-            "duration": {"Duration": {"number": value}},
-            "series": {"Series": {"select": {"name": value}}},
-            "source_id": {"Source": {"relation": [{"id": value}]}},
+            "title": Title("Title", property_value),
+            "author": Relation("Author", property_value),
+            "duration": Number("Duration", property_value),
+            "series": Select("Series", property_value),
+            "source_id": Relation("Source", [property_value]),
         }
-
-        return formats.get(name)
+        return formats.get(property_name)
 
 
 class BookDatabase(PersistenceLayer):
-    def _format_one_property(self, name, value):
-        if isinstance(value, list):
-            value = [{"id": id} for id in value]
-
+    def _turn_to_notion_property(self, property_name, property_value) -> NotionProperty:
         formats = {
-            "title": {"Title": {"title": [{"text": {"content": value}}]}},
-            "original_title": {
-                "Original Title": {
-                    "rich_text": [{"type": "text", "text": {"content": value}}]
-                }
-            },
-            "author": {"Author": {"relation": value}},
-            "translator": {"Translator": {"relation": value}},
-            "pages": {"Pages": {"number": value}},
-            "publisher": {"Publisher": {"select": {"name": value}}},
-            "isbn": {
-                "ISBN": {"rich_text": [{"type": "text", "text": {"content": value}}]}
-            },
-            "douban": {"Douban": {"url": value}},
-            "source_id": {"Source": {"relation": [{"id": value}]}},
+            "title": Title("Title", property_value),
+            "original_title": RichText("Original Title", property_value),
+            "author": Relation("Author", property_value),
+            "translator": Relation("Translator", property_value),
+            "pages": Number("Pages", property_value),
+            "publisher": Select("Publisher", property_value),
+            "isbn": RichText("ISBN", property_value),
+            "douban": URL("Douban", property_value),
+            "source_id": Relation("Source", [property_value]),
         }
+

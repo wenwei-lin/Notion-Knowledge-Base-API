@@ -40,7 +40,7 @@ class NotionPage:
 
         return properties
 
-    def format_page_to_notion(self):
+    def get_notion_page_object(self):
         properties = self._format_properties()
         cover = self._format_cover()
         icon = self._format_icon()

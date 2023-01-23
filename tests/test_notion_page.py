@@ -18,7 +18,7 @@ class TestNotionPage:
                 Select("Type", ""),
             ],
         )
-        assert page.format_page_to_notion() == {
+        assert page.get_notion_page_object() == {
             "parent": {"database_id": "12345"},
             "properties": {
                 "Title": {"title": [{"text": {"content": "学会提问"}}]},
@@ -37,7 +37,7 @@ class TestNotionPage:
                 Select("Type", ""),
             ],
         )
-        assert page.format_page_to_notion() == {
+        assert page.get_notion_page_object() == {
             "parent": {"database_id": "12345"},
             "cover": {"external": {"url": "cover_url"}},
             "properties": {
@@ -57,7 +57,7 @@ class TestNotionPage:
                 Select("Type", ""),
             ],
         )
-        assert page.format_page_to_notion() == {
+        assert page.get_notion_page_object() == {
             "parent": {"database_id": "12345"},
             "icon": {"emoji": "🍉"},
             "properties": {
@@ -77,7 +77,7 @@ class TestNotionPage:
                 Select("Type", ""),
             ],
         )
-        assert page.format_page_to_notion() == {
+        assert page.get_notion_page_object() == {
             "parent": {"database_id": "12345"},
             "icon": {"emoji": "🍉"},
             "properties": {
@@ -98,7 +98,7 @@ class TestNotionPage:
                 Select("Type", ""),
             ],
         )
-        assert page.format_page_to_notion() == {
+        assert page.get_notion_page_object() == {
             "parent": {"database_id": "12345"},
             "icon": {"external": {"url": "icon_url"}},
             "properties": {
@@ -119,7 +119,7 @@ class TestNotionPage:
                 Select("Type", ""),
             ],
         )
-        assert page.format_page_to_notion() == {
+        assert page.get_notion_page_object() == {
             "parent": {"database_id": "12345"},
             "icon": {"external": {"url": "icon_url"}},
             "cover": {"external": {"url": "cover_url"}},
