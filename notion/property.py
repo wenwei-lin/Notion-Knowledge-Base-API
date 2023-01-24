@@ -32,9 +32,10 @@ class Title(NotionProperty):
 class RichText(NotionProperty):
     def _format_to_notion_property_value(self) -> dict:
         assert isinstance(self.value, str), "The value of RichText should be a str."
+        value = self.value[0:2000] if len(self.value) > 2000 else self.value
         return {
             self.notion_column_name: {
-                "rich_text": [{"type": "text", "text": {"content": self.value}}]
+                "rich_text": [{"type": "text", "text": {"content": value}}]
             }
         }
 

@@ -143,6 +143,10 @@ class CreateSourceCommand(Command):
 
         source_id = self.get_source_id_command.execute(data)
         author_id_list = self.get_people_id_list_command.execute(data["author"])
+        # TODO: Refactor
+        if data.get('translator'):
+            translator_id_list = self.get_people_id_list_command.execute(data['translator'])
+            data['translator'] = translator_id_list
         data["source_id"] = source_id
         data["author"] = author_id_list
 

@@ -135,6 +135,8 @@ class BookDatabase(PersistenceLayer):
             "pages": Number("Pages", property_value),
             "publisher": Select("Publisher", property_value),
             "isbn": RichText("ISBN", property_value),
-            "douban": URL("Douban", property_value),
+            "douban_url": URL("Douban", property_value),
+            "douban_ranking": Number("Douban Ranking", property_value),
             "source_id": Relation("Source", [property_value]),
         }
+        return formats.get(property_name)
