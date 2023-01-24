@@ -1,7 +1,7 @@
 from abc import ABC, abstractmethod
 import logging
 
-from persistence.database import (
+from notion.database import (
     SourceDatabase,
     PersonDatabase,
     PodcastDatabase,
@@ -9,6 +9,7 @@ from persistence.database import (
     PersistenceLayer,
 )
 from extractor.zhongdu import ZhongduExtractor
+from extractor.douban import DoubanBookExtractor
 
 log = logging.getLogger(__name__)
 
@@ -143,6 +144,12 @@ class CreateSourceCommand(Command):
 
         source_id = self.get_source_id_command.execute(data)
         author_id_list = self.get_people_id_list_command.execute(data["author"])
+        # TODO: Refactor
+        if data.get("translator"):
+            translator_id_list = self.get_people_id_list_command.execute(
+                data["translator"]
+            )
+            data["translator"] = translator_id_list
         data["source_id"] = source_id
         data["author"] = author_id_list
 
@@ -194,8 +201,59 @@ class AddByURLCommand(Command):
                 data = extractor.extract(url)
                 create_command = create_commands.get(data["type"])
                 page = create_command.execute(data)
+                break
 
         if page is None:
             log.info(f"Cannot find a extractor {url}.")
+
+        return page
+
+
+class AddByISBNCommand(Command):
+    def __init__(self, source_database, person_database, book_database):
+        self.source_database = source_database
+        self.person_database = person_database
+        self.database = book_database
+        log.info("Create a AddByISBNCommand object.")
+
+    def _get_extractors(self):
+        extractors = [
+            DoubanBookExtractor(),
+        ]
+        log.info(f"Get extractors: {extractors}")
+        return extractors
+
+    def _get_create_commands(self):
+        get_source_id_command = GetSourceIDCommand(self.source_database)
+        get_person_id_command = GetPersonIDCommand(self.person_database)
+        create_commands = {
+            "Book": CreateSourceCommand(
+                get_source_id_command, get_person_id_command, self.database
+            )
+        }
+        log.info(f"Get create_commands: {create_commands}")
+
+        return create_commands
+
+    def execute(self, isbn):
+        log.info(f"Execute AddByISBN command.")
+
+        extractors = self._get_extractors()
+        create_commands = self._get_create_commands()
+
+        page = None
+
+        # Find a extractor that match the url
+        for extractor in extractors:
+            if extractor.match(isbn):
+                data = extractor.extract(isbn)
+                if data is None:
+                    continue
+                create_command = create_commands.get(data["type"])
+                page = create_command.execute(data)
+                break
+
+        if page is None:
+            log.info(f"Cannot find a extractor {isbn}.")
 
         return page
