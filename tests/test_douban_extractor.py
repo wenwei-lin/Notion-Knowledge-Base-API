@@ -24,6 +24,11 @@ class TestDoubanBookExtractor:
             get_source_id_command, get_person_id_command, book_database
         )
 
+    def test_match(self):
+        assert self.extractor.match("9787111680925")
+        assert self.extractor.match("9787115564672")
+        assert self.extractor.match("http://") == False
+
     def test_get_forwarding_url(self):
         assert (
             self.extractor._get_douban_url("9787111680925")
@@ -32,6 +37,12 @@ class TestDoubanBookExtractor:
         assert (
             self.extractor._get_douban_url("9787115564672")
             == "https://book.douban.com/subject/35503571/"
+        )
+    
+    def test_no_forwarding_url(self):
+        assert(
+            self.extractor._get_douban_url("9780593418239")
+            == None
         )
 
     def test_extract_data(self):

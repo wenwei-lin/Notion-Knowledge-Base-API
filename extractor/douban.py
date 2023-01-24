@@ -20,12 +20,27 @@ class DoubanBookExtractor(Extractor):
 
     def match(self, isbn: str) -> bool:
         isbn = isbn.replace("-", "")
+        pattern = re.compile(f"^[0-9]*$")
+
+        match_result = bool(pattern.search(isbn))
+
+        if match_result:
+            log.info(f"DoubanBook Extractor can process {isbn}.")
+        else:
+            log.info(f"DoubanBook Extractor cannot process {isbn}.")
+
+        return match_result
 
     def _get_douban_url(self, isbn):
-        endpoint = f"https://book.douban.com/isbn/{isbn}"
+        endpoint = f"https://book.douban.com/isbn/{isbn}/"
         response = requests.get(endpoint, headers=self.headers)
         douban_url = response.url
-        log.info(f"Get Douban url for book(isbn={isbn}): {douban_url}")
+
+        if douban_url == endpoint:
+            log.info(f"Cannot find forwarding url for {isbn}")
+            douban_url = None
+        else:
+            log.info(f"Get Douban url for book(isbn={isbn}): {douban_url}")
 
         return douban_url
 
@@ -146,22 +161,24 @@ class DoubanBookExtractor(Extractor):
 
     def extract(self, isbn) -> dict:
         douban_url = self._get_douban_url(isbn)
-        self._load_page(douban_url)
-        data = {
-            "title": self._get_title(),
-            "description": self._get_description(),
-            "author": self._get_author(),
-            "cover_url": self._get_cover(),
-            "icon_url": self._get_cover(),
-            "publisher": self._get_publisher(),
-            "original_title": self._get_original_title(),
-            "translator": self._get_translator(),
-            "published": self._get_published(),
-            "pages": self._get_pages(),
-            "douban_ranking": self._get_douban_ranking(),
-            "douban_url": douban_url,
-            "isbn": isbn,
-            "type": "Book",
-        }
-        log.info(f"Extract data from {douban_url}:\n{json.dumps(data, indent=4)}")
+        data = None
+        if douban_url:
+            self._load_page(douban_url)
+            data = {
+                "title": self._get_title(),
+                "description": self._get_description(),
+                "author": self._get_author(),
+                "cover_url": self._get_cover(),
+                "icon_url": self._get_cover(),
+                "publisher": self._get_publisher(),
+                "original_title": self._get_original_title(),
+                "translator": self._get_translator(),
+                "published": self._get_published(),
+                "pages": self._get_pages(),
+                "douban_ranking": self._get_douban_ranking(),
+                "douban_url": douban_url,
+                "isbn": isbn,
+                "type": "Book",
+            }
+            log.info(f"Extract data from {douban_url}:\n{json.dumps(data, indent=4)}")
         return data
