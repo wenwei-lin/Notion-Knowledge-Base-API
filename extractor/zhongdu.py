@@ -61,8 +61,8 @@ class ZhongduExtractor(Extractor):
         audio_time = meta_info["model"]["audioInfo"][0]["audioTime"]
         audio_time = audio_time.split(":")[0]
         log.info(f"Get duration: {audio_time}")
-
-        return int(audio_time)
+        #TODO: Handle float time.
+        return int(float(audio_time))
 
     def _extract_from_meta_info(self, meta_info):
         data = {
